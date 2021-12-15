@@ -18,12 +18,12 @@ public class Sender {
     public void SendMessage(String messageBody, String url, Map<String, String> msgAttributes) {
         Map<String, MessageAttributeValue> attributes = transformToMessageMap(msgAttributes);
 
-        SendMessageRequest send_msg_request = new SendMessageRequest()
+        SendMessageRequest sendMessageRequest = new SendMessageRequest()
                 .withQueueUrl(url)
                 .withMessageBody(messageBody)
                 .withMessageAttributes(attributes);
 
-        sqs.sendMessage(send_msg_request);
+        sqs.sendMessage(sendMessageRequest);
         System.out.println("Message Sent !!");
     }
 
