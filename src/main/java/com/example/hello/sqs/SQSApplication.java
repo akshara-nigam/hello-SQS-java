@@ -42,11 +42,8 @@ public class SQSApplication implements CommandLineRunner {
         String url = q.GetQueueURL(queueName);
 
         s.SendMessage(msgBody, url, msg);
-
         r.ReceiveMessage(url);
 
         q.DeleteQueue(queueName);
-
-        q.ListQueues();
     }
 }

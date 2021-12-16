@@ -1,12 +1,13 @@
 package com.example.hello.sqs.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.model.AmazonSQSException;
 import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,30 +18,55 @@ public class Receiver {
     AmazonSQS sqs;
 
     public void ReceiveMessage(String url) {
-        ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(url)
-                .withMaxNumberOfMessages(10)
-                .withWaitTimeSeconds(3)
-                .withMessageAttributeNames("Author", "Title", "WeeksOn");
+       Map<String, Map<String, Object>> hashMap =  this.PollMessage(url);
 
-        List<Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
+        System.out.println("\nMessages : ");
+       for(String receipt : hashMap.keySet()) {
+           Map<String, Object> val1 = hashMap.get(receipt);
+           System.out.print("\n\tReceipt : " + receipt + "\n\tBody : ");
 
-        if (messages.isEmpty()) {
-            System.out.printf("Queue Empty !!%s\n", url);
-            return;
-        }
+           for(String body : val1.keySet()) {
+               System.out.println(body + "\n\tAttributes : " + val1.get(body));
+           }
+       }
+    }
 
-        System.out.println("Message Received : ");
-        for(Message m : messages) {
-            System.out.println("\tBody \t: " + m.getBody());
+    private Map<String, Map<String, Object>> PollMessage(String url) {
+        // The Value of the map is of type `receipt -> message body, message attributes`
+        Map<String, Map<String, Object>> messagelist = new HashMap<>();
 
-            Map<String, MessageAttributeValue> attributes = m.getMessageAttributes();
-            for(String key : attributes.keySet()) {
-                System.out.println("\t" + key + "\t: " + attributes.get(key).getStringValue());
+        try {
+            boolean flag = true;
+
+            while(flag) {
+                System.out.println("Polling for Messages !!");
+
+                ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(url)
+                        .withMaxNumberOfMessages(10)
+                        .withWaitTimeSeconds(3)
+                        .withMessageAttributeNames("All");
+
+                List<Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
+                System.out.println("\tNo. of Messages received : " + messages.size());
+
+                for (Message m : messages) {
+                    Map<String, Object> msg = new HashMap<>();
+                    msg.put(m.getBody(), m.getMessageAttributes());
+
+                    String receipt = m.getReceiptHandle();
+
+                    messagelist.put(receipt, msg);
+                    this.DeleteMessage(receipt, url);
+                }
+
+                if(messages.size() == 0)
+                    flag = false;
             }
-
-            String receipt = m.getReceiptHandle();
-            this.DeleteMessage(receipt, url);
+        } catch (AmazonSQSException ase) {
+            ase.printStackTrace();
         }
+
+        return messagelist;
     }
 
     private void DeleteMessage(String receipt, String url) {
