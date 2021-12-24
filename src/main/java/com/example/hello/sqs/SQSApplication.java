@@ -13,7 +13,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.util.HashMap;
 import java.util.Map;
 
-//import static com.example.hello.sqs.constants.ConfigurationProperties.SQS_QUEUE;
 
 @SpringBootApplication(scanBasePackages = {"com.example.hello.sqs"})
 public class SQSApplication implements CommandLineRunner {
